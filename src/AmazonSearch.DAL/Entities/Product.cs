@@ -1,0 +1,10 @@
+namespace AmazonSearch.DAL.Entities;
+
+public class Product
+{
+    public string Id { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string? ImageUrl { get; set; }
+    public string? Brand { get; set; }
+    public List<string> Categories { get; set; } = [];
+}
