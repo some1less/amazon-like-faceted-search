@@ -25,7 +25,9 @@ public class ProductService : IProductService
         int validPage = request.Page < 1 ? 1 : request.Page;
         int validPageSize = request.PageSize > 100 ? 100 : request.PageSize;
 
-        return await _productRepository.SearchProductsAsync(request.TypedWord, validPage, validPageSize, cancellationToken);
+        return await _productRepository.SearchProductsAsync(request.TypedWord, 
+            request.Brands, request.Categories,
+            validPage, validPageSize, cancellationToken);
     }
 
     public async Task<IEnumerable<string>> GetTopBrandsAsync(CancellationToken cancellationToken)

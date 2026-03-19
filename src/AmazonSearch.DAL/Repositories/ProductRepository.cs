@@ -17,7 +17,9 @@ public class ProductRepository : IProductRepository
     }
     
     
-    public async Task<IEnumerable<Product>> SearchProductsAsync(string? word, int page, int pageSize,
+    public async Task<IEnumerable<Product>> SearchProductsAsync(string? word, 
+        string[]? brands, string[]? categories,
+        int page, int pageSize,
         CancellationToken cancellationToken)
     {
         await using var connection = new NpgsqlConnection(_connectionString);
@@ -33,6 +35,18 @@ public class ProductRepository : IProductRepository
         {
             sqlBuilder.Append("AND name ILIKE @Word ");
             parameters.Add("Word", $"%{word}%");
+        }
+        
+        if (brands != null && brands.Any())
+        {
+            sqlBuilder.Append("AND brand = ANY(@Brands) ");
+            parameters.Add("Brands", brands);
+        }
+        
+        if (categories != null && categories.Any())
+        {
+            sqlBuilder.Append("AND categories && @Categories ");
+            parameters.Add("Categories", categories);
         }
         
         sqlBuilder.Append("ORDER BY id ");
