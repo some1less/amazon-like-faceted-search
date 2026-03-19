@@ -18,7 +18,7 @@ The main task is to develop a search engine for a product catalog, which represe
 
 Furthermore, since the task specified features such as **brand** and **category faceted search**, I decided to also create indexes for these parameters in order to speed up data retrieval in O(log n) lookups by using **B-Tree** index tree for brands and **GIN** for the categories array.
 
-**Tradeoffs**: The fastest possible access (+ filtering) to data at the expense of write performance (slower inserts/deletes/updates due to index maintance) and slightly increased storage space (denormalized data + indexes).
+**Tradeoffs**: The fastest possible access (+ filtering) to data at the expense of write performance (slower inserts/deletes/updates due to index maintenance) and slightly increased storage space (denormalized data + indexes).
 
 ### Development process
 
@@ -26,6 +26,11 @@ Furthermore, since the task specified features such as **brand** and **category 
 - **Selection of Object-Relational Mapper (ORM)**: I chose Dapper.
 > Initially, I considered three options for a .NET-based backend: **Entity Framework** (EF), **ADO.NET**, and **Dapper**. Although EF is a powerful tool, it was overkill for this specific project. On the other hand, ADO.NET would have required writing a significant amount of boilerplate code. Ultimately, Dapper offered the best balance between performance and development speed.
 - **Search Optimization**: During testing, I identified that standard `ILIKE %word%` queries caused a Full Table Scan, which is inefficient for large datasets. To fix this, I implemented the `pg_trgm` extension with the GIN index, enabling fast partial match searches at the database level (thanks to this [resource](https://medium.com/@daniel.tooke/performant-text-searching-and-indexes-in-psql-trigrams-like-and-full-text-search-784c000efaa6#:~:text=For%20fuzzy%20matching%20and%20more%20complex%20queries:%20trigram%20matching%20with%20a%20gin%20index))
+- **In-Memory Caching for Facets**: Running heavy aggregation queries (`GROUP BY`, `COUNT`) on every page load to get top filters would kill database performance. To prevent this, I implemented an **`IMemoryCache`** layer in the .NET service to cache the top 10 brands and categories for 30 minutes, reducing the Supabase load **to almost zero** for these requests.
+- **URL-Driven State**: To meet the requirement of shareable search results, the React frontend relies entirely on React Router's **`useSearchParams`**. The URL acts as the single source of truth for the search query, active filters, and pagination, making the state fully restorable from a link.
+- **Array Filtering in Postgres**: Since products can belong to multiple categories, I stored them as a `text[]` array. To filter them efficiently, the Dapper repository utilizes native Postgres array operators like `= ANY()` for strings and `&&` for array intersections.
+
+**Overall Tradeoffs** (Dynamic vs. Global Facet Counts): Calculating exact facet counts dynamically for every active filter combination is computationally expensive for a standard PostgreSQL setup. As a tradeoff, I decided to fetch and display the Global Top 10 filters instead. This keeps the UX fast and database healthy without over-engineering an Elasticsearch or Typesense cluster for a small dataset.
 
 
 
